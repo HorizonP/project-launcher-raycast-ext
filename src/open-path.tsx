@@ -8,12 +8,13 @@ import {
   launchCommand,
   showInFinder,
   showToast,
+  updateCommandMetadata,
 } from "@raycast/api";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PathForm } from "./components/PathForm";
 import { launchPathWithApp, launchPathWithDefaultApp } from "./lib/launch";
-import { resolveTypedPathCandidate } from "./lib/paths";
+import { getCompletedPathQuery, resolveTypedPathCandidates } from "./lib/paths";
 import { buildSearchItems } from "./lib/search";
 import {
   getConfiguredApps,
@@ -34,6 +35,8 @@ type LaunchActionOptions = {
   pathLabel?: string;
   appId?: string;
 };
+
+const OPEN_PATH_NAVIGATION_TITLE = "Open Path · Tab to Complete";
 
 export default function OpenPathCommand() {
   const [savedPaths, setSavedPaths] = useState<SavedPath[]>([]);
@@ -62,8 +65,12 @@ export default function OpenPathCommand() {
     void reload();
   }, [reload]);
 
-  const typedPathCandidate = useMemo(
-    () => resolveTypedPathCandidate(query),
+  useEffect(() => {
+    void updateCommandMetadata({ subtitle: "Tab completes path" });
+  }, []);
+
+  const typedPathCandidates = useMemo(
+    () => resolveTypedPathCandidates(query),
     [query],
   );
   const searchItems = useMemo(
@@ -72,9 +79,9 @@ export default function OpenPathCommand() {
         query,
         savedPaths,
         recentLaunches,
-        typedPathCandidate,
+        typedPathCandidates,
       }),
-    [query, recentLaunches, savedPaths, typedPathCandidate],
+    [query, recentLaunches, savedPaths, typedPathCandidates],
   );
 
   async function handleLaunch(options: LaunchActionOptions) {
@@ -148,6 +155,17 @@ export default function OpenPathCommand() {
       ));
   }
 
+  function renderCompletePathAction(path: string) {
+    return (
+      <Action
+        title="Complete Path"
+        icon={Icon.TextCursor}
+        shortcut={{ modifiers: [], key: "tab" }}
+        onAction={() => setQuery(getCompletedPathQuery(query, path))}
+      />
+    );
+  }
+
   function renderActionsForItem(item: SearchItem) {
     if (item.type === "saved-path") {
       return (
@@ -173,6 +191,7 @@ export default function OpenPathCommand() {
             }
           />
           {renderOpenWithActions(item.savedPath.path, item.savedPath.label)}
+          {renderCompletePathAction(item.savedPath.path)}
           <Action.Push
             title="Edit Path"
             icon={Icon.Pencil}
@@ -226,6 +245,7 @@ export default function OpenPathCommand() {
             item.recentLaunch.pathLabel,
             item.recentLaunch.appId,
           )}
+          {renderCompletePathAction(item.recentLaunch.path)}
           <Action.Push
             title="Save Path"
             icon={Icon.Plus}
@@ -266,6 +286,7 @@ export default function OpenPathCommand() {
           }
         />
         {renderOpenWithActions(item.path, item.label)}
+        {renderCompletePathAction(item.path)}
         <Action.Push
           title="Save Path"
           icon={Icon.Plus}
@@ -288,7 +309,7 @@ export default function OpenPathCommand() {
 
   if (!isLoading && configuredApps.length === 0) {
     return (
-      <List navigationTitle="Open Path">
+      <List navigationTitle={OPEN_PATH_NAVIGATION_TITLE}>
         <List.EmptyView
           icon={Icon.AppWindow}
           title="No apps configured"
@@ -316,8 +337,9 @@ export default function OpenPathCommand() {
     <List
       isLoading={isLoading}
       filtering={false}
-      navigationTitle="Open Path"
+      navigationTitle={OPEN_PATH_NAVIGATION_TITLE}
       searchBarPlaceholder="Search saved paths, recent launches, or type a directory path..."
+      searchText={query}
       onSearchTextChange={setQuery}
     >
       {searchItems.length === 0 ? (
@@ -340,7 +362,7 @@ export default function OpenPathCommand() {
                 icon={Icon.Plus}
                 target={
                   <PathForm
-                    initialPath={typedPathCandidate}
+                    initialPath={typedPathCandidates[0]}
                     onDidSave={reload}
                   />
                 }

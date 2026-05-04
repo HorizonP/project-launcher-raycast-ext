@@ -31,7 +31,7 @@ describe("buildSearchItems", () => {
       query: "/Users/peiyu/Projects/gamma",
       savedPaths,
       recentLaunches,
-      typedPathCandidate: "/Users/peiyu/Projects/gamma",
+      typedPathCandidates: ["/Users/peiyu/Projects/gamma"],
     });
 
     expect(result[0]).toMatchObject({
@@ -40,13 +40,36 @@ describe("buildSearchItems", () => {
     });
   });
 
+  it("places multiple typed path candidates before recent and saved paths", () => {
+    const result = buildSearchItems({
+      query: "Projects",
+      savedPaths,
+      recentLaunches,
+      typedPathCandidates: [
+        "/Users/peiyu/Projects/gamma",
+        "/Users/peiyu/Projects/garden",
+      ],
+    });
+
+    expect(result.map((item) => item.type)).toEqual([
+      "typed-path",
+      "typed-path",
+      "recent-launch",
+      "saved-path",
+    ]);
+    expect(result.slice(0, 2)).toMatchObject([
+      { path: "/Users/peiyu/Projects/gamma" },
+      { path: "/Users/peiyu/Projects/garden" },
+    ]);
+  });
+
   it("matches saved paths by label, basename, and full path", () => {
     expect(
       buildSearchItems({
         query: "alpha",
         savedPaths,
         recentLaunches: [],
-        typedPathCandidate: undefined,
+        typedPathCandidates: [],
       }).map((item) => item.type),
     ).toContain("saved-path");
     expect(
@@ -54,7 +77,7 @@ describe("buildSearchItems", () => {
         query: "Projects/alpha",
         savedPaths,
         recentLaunches: [],
-        typedPathCandidate: undefined,
+        typedPathCandidates: [],
       }).map((item) => item.type),
     ).toContain("saved-path");
   });
@@ -64,7 +87,7 @@ describe("buildSearchItems", () => {
       query: "code",
       savedPaths: [],
       recentLaunches,
-      typedPathCandidate: undefined,
+      typedPathCandidates: [],
     });
 
     expect(result).toHaveLength(1);
@@ -79,7 +102,7 @@ describe("buildSearchItems", () => {
       query: "",
       savedPaths,
       recentLaunches,
-      typedPathCandidate: undefined,
+      typedPathCandidates: [],
     });
 
     expect(result.map((item) => item.type)).toEqual([

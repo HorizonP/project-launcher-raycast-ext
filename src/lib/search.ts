@@ -6,23 +6,18 @@ type BuildSearchItemsOptions = {
   query: string;
   savedPaths: SavedPath[];
   recentLaunches: RecentLaunch[];
-  typedPathCandidate?: string;
+  typedPathCandidates: string[];
 };
 
 export function buildSearchItems(
   options: BuildSearchItemsOptions,
 ): SearchItem[] {
   const normalizedQuery = options.query.trim().toLowerCase();
-  const typedItems = options.typedPathCandidate
-    ? [
-        {
-          type: "typed-path" as const,
-          path: options.typedPathCandidate,
-          label:
-            basename(options.typedPathCandidate) || options.typedPathCandidate,
-        },
-      ]
-    : [];
+  const typedItems = options.typedPathCandidates.map((typedPathCandidate) => ({
+    type: "typed-path" as const,
+    path: typedPathCandidate,
+    label: basename(typedPathCandidate) || typedPathCandidate,
+  }));
 
   const recentItems = options.recentLaunches
     .filter((recentLaunch) =>
