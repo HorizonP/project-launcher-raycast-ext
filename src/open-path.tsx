@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { PathForm } from "./components/PathForm";
 import { launchPathWithApp, launchPathWithDefaultApp } from "./lib/launch";
 import { getCompletedPathQuery, resolveTypedPathCandidates } from "./lib/paths";
+import { getRecentLaunchDisplay } from "./lib/recent-launch-display";
 import { buildSearchItems } from "./lib/search";
 import {
   getConfiguredApps,
@@ -405,13 +406,28 @@ export default function OpenPathCommand() {
           }
 
           if (item.type === "recent-launch") {
+            const display = getRecentLaunchDisplay(
+              item.recentLaunch,
+              configuredApps,
+            );
+
             return (
               <List.Item
                 key={`recent-${item.recentLaunch.id}`}
-                icon={Icon.Clock}
+                icon={display.icon}
                 title={item.recentLaunch.pathLabel || item.recentLaunch.path}
                 subtitle={`${item.recentLaunch.appNameSnapshot} • ${item.recentLaunch.path}`}
-                accessories={[{ text: `${item.recentLaunch.launchCount}x` }]}
+                accessories={[
+                  ...(display.appAccessoryIcon
+                    ? [
+                        {
+                          icon: display.appAccessoryIcon,
+                          tooltip: display.appAccessoryTooltip,
+                        } as List.Item.Accessory,
+                      ]
+                    : []),
+                  { text: display.launchCountText },
+                ]}
                 actions={renderActionsForItem(item)}
               />
             );
